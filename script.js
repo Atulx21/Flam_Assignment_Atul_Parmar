@@ -104,6 +104,41 @@ class PhysicsPoint {
             return { x, y };
         }
 
+        // Derivative Formula: B'(t)
+    calculateTangent(t) {
+        const u = 1 - t;
+        
+        // Derivative Terms (The slope of the curve)
+        let t1x = 3 * (u * u) * (this.p1.x - this.p0.x);
+        let t1y = 3 * (u * u) * (this.p1.y - this.p0.y);
+        
+        let t2x = 6 * u * t * (this.p2.x - this.p1.x);
+        let t2y = 6 * u * t * (this.p2.y - this.p1.y);
+        
+        let t3x = 3 * (t * t) * (this.p3.x - this.p2.x);
+        let t3y = 3 * (t * t) * (this.p3.y - this.p2.y);
+
+        let tx = t1x + t2x + t3x;
+        let ty = t1y + t2y + t3y;
+
+        // Normalize (Make the vector length exactly 1)
+        let len = Math.sqrt(tx*tx + ty*ty);
+        if (len === 0) len = 1;
+        return { x: tx/len, y: ty/len };
+    }
+
+    // Helper to draw the white line
+    drawTangent(ctx, pos, tan) {
+        ctx.save();
+        ctx.strokeStyle = CONFIG.tangentColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        ctx.lineTo(pos.x + tan.x * 20, pos.y + tan.y * 20); // Line length 20px
+        ctx.stroke();
+        ctx.restore();
+    }
+
         update() {
             // P1 chases 100px LEFT of mouse
             this.p1.update(mouse.x - 100, mouse.y);
@@ -111,25 +146,32 @@ class PhysicsPoint {
             this.p2.update(mouse.x + 100, mouse.y);
         }
 
-        draw(ctx) {
-            ctx.beginPath();
-            ctx.moveTo(this.p0.x, this.p0.y);
+       draw(ctx) {
+        ctx.beginPath();
+        ctx.moveTo(this.p0.x, this.p0.y);
 
-            for (let i = 0; i <= CONFIG.numSamples; i++) {
-                let t = i / CONFIG.numSamples;
-                let pos = this.calculatePoint(t);
-                ctx.lineTo(pos.x, pos.y);
+        for (let i = 0; i <= CONFIG.numSamples; i++) {
+            let t = i / CONFIG.numSamples;
+            let pos = this.calculatePoint(t);
+            ctx.lineTo(pos.x, pos.y);
+
+            // --- NEW: Tangent Drawing Logic ---
+            // Only draw tangents occasionally (defined in CONFIG)
+            if (i % CONFIG.tangentInterval === 0 && i > 0 && i < CONFIG.numSamples) {
+                let tan = this.calculateTangent(t);
+                this.drawTangent(ctx, pos, tan);
             }
-        
-            ctx.strokeStyle = CONFIG.lineColor;
-            ctx.lineWidth = 4;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-
-            // Draw Control Points
-            this.p1.draw(ctx);
-            this.p2.draw(ctx);
         }
+        
+        ctx.strokeStyle = CONFIG.lineColor;
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        // Draw Control Points
+        this.p1.draw(ctx);
+        this.p2.draw(ctx);
+    }
     }
 
     // Instantiate the Curve
