@@ -67,16 +67,64 @@ class PhysicsPoint {
     }
 }
 
-// Animation Loop
-function animate() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Debug Text
-    ctx.fillStyle = "white";
-    ctx.fillText("Setup Complete. Ready for Physics.", 50, 50);
 
-    requestAnimationFrame(animate);
-}
 
-// Start Loop
-animate();
+    // --- CLASS 2: BEZIER CURVE ---
+    class BezierCurve {
+        constructor() {
+            // Fixed Endpoints
+            this.p0 = { x: 50, y: canvas.height / 2 };
+            this.p3 = { x: canvas.width - 50, y: canvas.height / 2 };
+
+            // Dynamic Control Points (Physics enabled)
+            this.p1 = new PhysicsPoint(canvas.width / 3, canvas.height / 2);
+            this.p2 = new PhysicsPoint((canvas.width / 3) * 2, canvas.height / 2);
+        }
+
+        calculatePoint(t) {
+            const u = 1 - t;
+            const tt = t * t;
+            const uu = u * u;
+            const uuu = uu * u;
+            const ttt = tt * t;
+
+            // Standard Cubic Bézier Formula
+            let x = uuu * this.p0.x + 3 * uu * t * this.p1.x + 3 * u * tt * this.p2.x + ttt * this.p3.x;
+            let y = uuu * this.p0.y + 3 * uu * t * this.p1.y + 3 * u * tt * this.p2.y + ttt * this.p3.y;
+
+            return { x, y };
+        }
+
+        draw(ctx) {
+            ctx.beginPath();
+            ctx.moveTo(this.p0.x, this.p0.y);
+
+            for (let i = 0; i <= CONFIG.numSamples; i++) {
+                let t = i / CONFIG.numSamples;
+                let pos = this.calculatePoint(t);
+                ctx.lineTo(pos.x, pos.y);
+            }
+        
+            ctx.strokeStyle = CONFIG.lineColor;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+
+            // Draw Control Points
+            this.p1.draw(ctx);
+            this.p2.draw(ctx);
+        }
+    }
+
+    // Instantiate the Curve
+    const curve = new BezierCurve();
+
+    // Replace the animate() function to draw the curve
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        curve.draw(ctx); // Draw the static curve
+        requestAnimationFrame(animate);
+    }
+
+    // Start Loop
+    animate();
