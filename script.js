@@ -27,6 +27,15 @@ resizeCanvas();
 // Global Mouse State
 const mouse = { x: canvas.width / 2, y: canvas.height / 2 };
 
+// Track mouse position (account for CSS scaling)
+canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    mouse.x = (e.clientX - rect.left) * scaleX;
+    mouse.y = (e.clientY - rect.top) * scaleY;
+});
+
 
 // --- CLASS 1: PHYSICS POINT ---
 class PhysicsPoint {
@@ -95,6 +104,13 @@ class PhysicsPoint {
             return { x, y };
         }
 
+        update() {
+            // P1 chases 100px LEFT of mouse
+            this.p1.update(mouse.x - 100, mouse.y);
+            // P2 chases 100px RIGHT of mouse
+            this.p2.update(mouse.x + 100, mouse.y);
+        }
+
         draw(ctx) {
             ctx.beginPath();
             ctx.moveTo(this.p0.x, this.p0.y);
@@ -122,7 +138,8 @@ class PhysicsPoint {
     // Replace the animate() function to draw the curve
     function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        curve.draw(ctx); // Draw the static curve
+        curve.update(); // Calculate physics for control points
+        curve.draw(ctx); // Draw updated curve
         requestAnimationFrame(animate);
     }
 
